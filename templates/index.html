@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Table with Filtering</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Data Table</h2>
+        <!-- Filter Inputs -->
+        <div class="row mb-3" id="filter-row"></div>
+        <!-- Table -->
+        <table id="dataTable" class="table table-striped table-bordered" style="width:100%">
+            <thead>
+                <tr id="table-headers"></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- Custom JavaScript -->
+    <script>
+        $(document).ready(function() {
+            // Fetch schema to build table headers and filters
+            $.getJSON('/schema', function(schema) {
+                const columns = Object.keys(schema).map(key => ({
+                    title: key.charAt(0).toUpperCase() + key.slice(1),
+                    data: key
+                }));
+
+                // Set table headers
+                const headerRow = $('#table-headers');
+                columns.forEach(col => {
+                    headerRow.append(`<th>${col.title}</th>`);
+                });
+
+                // Create filter inputs
+                const filterRow = $('#filter-row');
+                columns.forEach(col => {
+                    filterRow.append(`
+                        <div class="col-md-3">
+                            <label for="filter-${col.data}" class="form-label">${col.title}</label>
+                            <input type="text" class="form-control filter-input" id="filter-${col.data}" data-column="${col.data}" placeholder="Filter ${col.title}">
+                        </div>
+                    `);
+                });
+
+                // Initialize DataTable
+                const table = $('#dataTable').DataTable({
+                    ajax: {
+                        url: '/data',
+                        dataSrc: ''
+                    },
+                    columns: columns,
+                    dom: 't', // Show only the table (no default search or pagination)
+                    pageLength: 10
+                });
+
+                // Apply column filters
+                $('.filter-input').on('keyup change', function() {
+                    const column = $(this).data('column');
+                    const value = $(this).val();
+                    table.column(columns.findIndex(col => col.data === column)).search(value).draw();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
