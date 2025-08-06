@@ -31,21 +31,26 @@ def get_schema():
         creds = load_credentials()
         # Connect to database
         connection = get_db_connection()
-        cursor = connection.cursor(MySQLdb.cursors.DictCursor)  # Fetch rows as dictionaries
-        # Query one row to get column names and types
-        cursor.execute(f"SELECT * FROM {creds['table']} LIMIT 1")
-        rows = cursor.fetchall()
+        cursor = connection.cursor()  # Use default cursor for SHOW COLUMNS
+        # Query column order from the table
+        cursor.execute(f"SHOW COLUMNS FROM {creds['table']}")
+        columns = cursor.fetchall()
         
-        if not rows:
-            # If table is empty, fetch column names from table schema
-            cursor.execute(f"SHOW COLUMNS FROM {creds['table']}")
-            columns = cursor.fetchall()
-            # Create a dummy schema with generic types (object as fallback)
-            schema = {col['Field']: 'object' for col in columns}
-        else:
-            # Convert single row to DataFrame to infer types
-            df = pd.DataFrame(rows)
-            schema = {col: str(dtype) for col, dtype in df.dtypes.items()}
+        # Create ordered schema as a list of dictionaries
+        schema = []
+        for col in columns:
+            col_name = col[0]  # Column name is the first element
+            # Fetch one row to infer data type
+            cursor.execute(f"SELECT {col_name} FROM {creds['table']} LIMIT 1")
+            row = cursor.fetchone()
+            if row:
+                # Convert to DataFrame to infer type
+                df = pd.DataFrame([row], columns=[col_name])
+                col_type = str(df.dtypes[col_name])
+            else:
+                # Fallback for empty table
+                col_type = 'object'
+            schema.append({"name": col_name, "type": col_type})
         
         cursor.close()
         connection.close()

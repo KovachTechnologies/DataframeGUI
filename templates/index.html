@@ -8,12 +8,21 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        .filter-row {
+            margin-bottom: 1rem;
+        }
+        .filter-input {
+            box-sizing: border-box; /* Ensure padding doesn't affect width */
+            width: 100%; /* Initial width, will be overridden by JS */
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
         <h2>Data Table</h2>
         <!-- Filter Inputs -->
-        <div class="row mb-3" id="filter-row"></div>
+        <div class="row filter-row" id="filter-row"></div>
         <!-- Table -->
         <table id="dataTable" class="table table-striped table-bordered" style="width:100%">
             <thead>
@@ -35,9 +44,10 @@
         $(document).ready(function() {
             // Fetch schema to build table headers and filters
             $.getJSON('/schema', function(schema) {
-                const columns = Object.keys(schema).map(key => ({
-                    title: key.charAt(0).toUpperCase() + key.slice(1),
-                    data: key
+                // Map schema array to columns array, preserving order
+                const columns = schema.map(item => ({
+                    title: item.name.charAt(0).toUpperCase() + item.name.slice(1),
+                    data: item.name
                 }));
 
                 // Set table headers
@@ -50,8 +60,7 @@
                 const filterRow = $('#filter-row');
                 columns.forEach(col => {
                     filterRow.append(`
-                        <div class="col-md-3">
-                            <label for="filter-${col.data}" class="form-label">${col.title}</label>
+                        <div class="col">
                             <input type="text" class="form-control filter-input" id="filter-${col.data}" data-column="${col.data}" placeholder="Filter ${col.title}">
                         </div>
                     `);
@@ -65,7 +74,18 @@
                     },
                     columns: columns,
                     dom: 't', // Show only the table (no default search or pagination)
-                    pageLength: 10
+                    pageLength: 10,
+                    initComplete: function() {
+                        // After DataTable initialization, align filter widths with headers
+                        this.api().columns().every(function() {
+                            const column = this;
+                            const header = $(column.header());
+                            const filterInput = $(`#filter-${column.data()}`);
+                            if (filterInput.length) {
+                                filterInput.css('width', header.outerWidth() + 'px');
+                            }
+                        });
+                    }
                 });
 
                 // Apply column filters
