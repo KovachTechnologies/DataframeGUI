@@ -35,13 +35,8 @@ Output should look like
 +----+---------------------+---------+---------+---------+
 ```
 
-# Running the App
-```
-python app.py
-```
-
 # Configure Credentials
-You need to configure `credentials.json` with the proper credentials to connect to the server.  This is in the root directory and looks like:
+You need to configure `credentials.json` with the proper credentials to connect to the mysql server.  This is in the root directory and looks like:
 
 ```
 {
@@ -51,4 +46,9 @@ You need to configure `credentials.json` with the proper credentials to connect 
     "database": "SampleData",
     "table": "records"
 }
+```
+
+# Running the App
+```
+python app.py
 ```
